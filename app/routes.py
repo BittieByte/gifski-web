@@ -2,15 +2,44 @@ import os
 import uuid
 import glob
 import subprocess
+import re
 from flask import request, render_template, send_file
 from app import app, UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# ---------------------- Sanitizers ----------------------
+def sanitize_int(val, min_val=None, max_val=None):
+    """Convert to int and clamp to optional bounds. Return None if invalid."""
+    try:
+        v = int(val)
+        if min_val is not None and v < min_val:
+            return None
+        if max_val is not None and v > max_val:
+            return None
+        return v
+    except (TypeError, ValueError):
+        return None
+
+
+def sanitize_color(val):
+    """Allow only valid hex colors: RRGGBB or #RRGGBB"""
+    if not val:
+        return None
+    val = val.strip()
+    if re.fullmatch(r"#?[0-9a-fA-F]{6}", val):
+        return val if val.startswith("#") else f"#{val}"
+    return None
+
+
+def sanitize_bool(val):
+    """Convert checkbox input to boolean"""
+    return bool(val)
+
+
 # ---------------------- Helpers ----------------------
 def generate_file_paths(filename):
-    """Generate unique paths for input, output, and temp frames"""
     file_id = str(uuid.uuid4())
     return {
         "input": os.path.join(UPLOAD_FOLDER, f"{file_id}_{filename}"),
@@ -24,7 +53,7 @@ def save_uploaded_file(uploaded_file, path):
 
 
 def extract_frames(input_path, temp_frames_dir):
-    """Extract frames from video"""
+    """Extract frames from video using ffmpeg"""
     os.makedirs(temp_frames_dir, exist_ok=True)
     subprocess.run([
         "ffmpeg", "-i", input_path, "-vsync", "0",
@@ -42,7 +71,7 @@ def optimize_gif(
     motion_quality=None, lossy_quality=None, repeat=None,
     fixed_color=None, matte=None, no_sort=False
 ):
-    """Run gifski with all relevant options"""
+    """Run gifski with all sanitized options"""
     frame_files = [os.path.abspath(f) for f in frame_files]
     output_path = os.path.abspath(output_path)
 
@@ -81,13 +110,6 @@ def calculate_size_reduction(orig_path, output_path):
     return {"orig_size": round(orig_size, 2), "new_size": round(new_size, 2), "reduction": reduction}
 
 
-def sanitize_int(val):
-    try:
-        return int(val)
-    except (TypeError, ValueError):
-        return None
-
-
 # ---------------------- Routes ----------------------
 @app.route("/", methods=["GET"])
 def index():
@@ -100,23 +122,24 @@ def upload():
     paths = generate_file_paths(uploaded_file.filename)
     save_uploaded_file(uploaded_file, paths["input"])
 
-    # Collect all Gifski options from form
-    quality = sanitize_int(request.form.get("quality")) or 90
-    fps = sanitize_int(request.form.get("fps"))
-    width = sanitize_int(request.form.get("width"))
-    height = sanitize_int(request.form.get("height"))
-    fast = bool(request.form.get("fast"))
-    extra = bool(request.form.get("extra"))
-    motion_quality = sanitize_int(request.form.get("motion_quality"))
-    lossy_quality = sanitize_int(request.form.get("lossy_quality"))
+    # ---------------------- Sanitize inputs ----------------------
+    quality = sanitize_int(request.form.get("quality"), 1, 100) or 90
+    fps = sanitize_int(request.form.get("fps"), 1)
+    width = sanitize_int(request.form.get("width"), 1)
+    height = sanitize_int(request.form.get("height"), 1)
+    fast = sanitize_bool(request.form.get("fast"))
+    extra = sanitize_bool(request.form.get("extra"))
+    motion_quality = sanitize_int(request.form.get("motion_quality"), 1, 100)
+    lossy_quality = sanitize_int(request.form.get("lossy_quality"), 1, 100)
     repeat = sanitize_int(request.form.get("repeat"))
-    fixed_color = request.form.get("fixed_color") or None
-    matte = request.form.get("matte") or None
-    no_sort = bool(request.form.get("no_sort"))
+    fixed_color = sanitize_color(request.form.get("fixed_color"))
+    matte = sanitize_color(request.form.get("matte"))
+    no_sort = sanitize_bool(request.form.get("no_sort"))
 
     try:
         is_gif = uploaded_file.filename.lower().endswith(".gif")
         frame_files = [paths["input"]] if is_gif else extract_frames(paths["input"], paths["temp_frames"])
+
         optimize_gif(
             frame_files,
             paths["output"],
@@ -133,6 +156,7 @@ def upload():
             matte=matte,
             no_sort=no_sort
         )
+
     finally:
         cleanup_temp_frames(paths["temp_frames"])
 
