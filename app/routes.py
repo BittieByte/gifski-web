@@ -3,12 +3,10 @@ import uuid
 import glob
 import subprocess
 import re
-from flask import request, render_template, send_file
+from flask import request, render_template, send_file, abort
 from app import app, UPLOAD_FOLDER
-from flask import abort
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 
 # ---------------------- Sanitizers ----------------------
 def sanitize_int(val, min_val=None, max_val=None):
@@ -23,7 +21,6 @@ def sanitize_int(val, min_val=None, max_val=None):
     except (TypeError, ValueError):
         return None
 
-
 def sanitize_color(val):
     """Allow only valid hex colors: RRGGBB or #RRGGBB"""
     if not val:
@@ -33,11 +30,9 @@ def sanitize_color(val):
         return val if val.startswith("#") else f"#{val}"
     return None
 
-
 def sanitize_bool(val):
     """Convert checkbox input to boolean"""
     return bool(val)
-
 
 # ---------------------- Helpers ----------------------
 def generate_file_paths(filename):
@@ -48,10 +43,23 @@ def generate_file_paths(filename):
         "temp_frames": os.path.join(UPLOAD_FOLDER, f"{file_id}_frames")
     }
 
-
 def save_uploaded_file(uploaded_file, path):
     uploaded_file.save(path)
 
+def get_media_dimensions(input_path):
+    """Get width and height of a video or GIF using ffprobe."""
+    result = subprocess.run([
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0",
+        input_path
+    ], capture_output=True, text=True, check=True)
+
+    parts = result.stdout.strip().split(",")
+    if len(parts) == 2:
+        return int(parts[0]), int(parts[1])
+    raise RuntimeError("Could not determine media dimensions.")
 
 def extract_frames(input_path, temp_frames_dir):
     """Extract frames from video using ffmpeg"""
@@ -64,7 +72,6 @@ def extract_frames(input_path, temp_frames_dir):
     if not frames:
         raise RuntimeError("No frames extracted from video.")
     return frames
-
 
 def optimize_gif(
     frame_files, output_path, quality=90, fps=None,
@@ -90,12 +97,10 @@ def optimize_gif(
     if matte: cmd += ["--matte", matte]
     if no_sort: cmd += ["--no-sort"]
 
-    # Append all frames last
     cmd += frame_files
 
     print("Running command:", " ".join(cmd))
     subprocess.run(cmd, check=True)
-
 
 def cleanup_temp_frames(temp_frames_dir):
     if os.path.isdir(temp_frames_dir):
@@ -103,19 +108,25 @@ def cleanup_temp_frames(temp_frames_dir):
             os.remove(os.path.join(temp_frames_dir, f))
         os.rmdir(temp_frames_dir)
 
-
 def calculate_size_reduction(orig_path, output_path):
-    orig_size = os.path.getsize(orig_path) / 1024
-    new_size = os.path.getsize(output_path) / 1024
-    reduction = round((orig_size - new_size) / orig_size * 100, 2)
-    return {"orig_size": round(orig_size, 2), "new_size": round(new_size, 2), "reduction": reduction}
+    orig_size_kb = os.path.getsize(orig_path) / 1024
+    new_size_kb = os.path.getsize(output_path) / 1024
+    reduction = round((orig_size_kb - new_size_kb) / orig_size_kb * 100, 2)
+    return {"orig_size": round(orig_size_kb, 2), "new_size": round(new_size_kb, 2), "reduction": reduction}
 
+def human_readable_size(filepath):
+    """Return human-readable file size with 2 decimal points."""
+    size = os.path.getsize(filepath)
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"
 
 # ---------------------- Routes ----------------------
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
-
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -136,6 +147,14 @@ def upload():
     fixed_color = sanitize_color(request.form.get("fixed_color"))
     matte = sanitize_color(request.form.get("matte"))
     no_sort = sanitize_bool(request.form.get("no_sort"))
+
+    # ---------------------- Dimension fallback ----------------------
+    if not width and not height:
+        # Neither specified — use original dimensions to prevent gifski's default downscale
+        orig_w, orig_h = get_media_dimensions(paths["input"])
+        width = orig_w
+        height = orig_h
+    # If only one is specified, leave the other as None so gifski scales proportionally
 
     try:
         is_gif = uploaded_file.filename.lower().endswith(".gif")
@@ -161,25 +180,23 @@ def upload():
     finally:
         cleanup_temp_frames(paths["temp_frames"])
 
+    # ---------------------- File sizes ----------------------
+    orig_size = human_readable_size(paths["input"])
+    new_size = human_readable_size(paths["output"])
     sizes = calculate_size_reduction(paths["input"], paths["output"])
     gif_url = f"/uploads/{os.path.basename(paths['output'])}"
 
     return render_template(
         "result.html",
-        orig_size=sizes["orig_size"],
-        new_size=sizes["new_size"],
+        orig_size=orig_size,
+        new_size=new_size,
         reduction=sizes["reduction"],
         gif_url=gif_url
     )
 
-
-from flask import abort
-
 @app.route("/uploads/<filename>")
 def serve_file(filename):
     safe_path = os.path.join(UPLOAD_FOLDER, os.path.basename(filename))
-
     if not os.path.exists(safe_path):
         abort(404)
-
     return send_file(safe_path)

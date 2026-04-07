@@ -1,5 +1,6 @@
 services:
   gifski-web:
+    container_name: gifski-web
     build: .
     ports:
       - "5000:5000"

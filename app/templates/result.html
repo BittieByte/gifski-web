@@ -16,11 +16,11 @@
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
     <div class="bg-gray-700 rounded-xl p-4">
       <p class="text-gray-400 text-sm">Original Size</p>
-      <p class="text-xl font-bold">{{ orig_size }} KB</p>
+      <p class="text-xl font-bold">{{ orig_size }}</p>
     </div>
     <div class="bg-gray-700 rounded-xl p-4">
       <p class="text-gray-400 text-sm">Optimized Size</p>
-      <p class="text-xl font-bold">{{ new_size }} KB</p>
+      <p class="text-xl font-bold">{{ new_size }}</p>
     </div>
     <div class="bg-gray-700 rounded-xl p-4">
       <p class="text-gray-400 text-sm">Reduction</p>
@@ -43,16 +43,6 @@
        class="flex-1 text-center py-3 bg-gray-700 rounded-xl font-bold hover:bg-gray-600 transition">
       Optimize Another
     </a>
-  </div>
-
-  <!-- Optional: copy URL -->
-  <div class="flex justify-center mt-2">
-    <input type="text" value="{{ gif_url }}" readonly
-           class="bg-gray-700 text-gray-100 rounded-l-xl p-2 w-3/4 focus:outline-none">
-    <button @click="navigator.clipboard.writeText('{{ gif_url }}'); copying=true; setTimeout(()=>copying=false,1000)"
-            class="bg-green-500 p-2 rounded-r-xl hover:bg-green-600 transition">
-      <span x-text="copying ? 'Copied!' : 'Copy URL'"></span>
-    </button>
   </div>
 
 </div>
