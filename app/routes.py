@@ -97,7 +97,6 @@ def optimize_gif(
     if matte: cmd += ["--matte", matte]
     if no_sort: cmd += ["--no-sort"]
 
-    # Append all frames last
     cmd += frame_files
 
     print("Running command:", " ".join(cmd))
@@ -150,10 +149,12 @@ def upload():
     no_sort = sanitize_bool(request.form.get("no_sort"))
 
     # ---------------------- Dimension fallback ----------------------
-    if not width or not height:
+    if not width and not height:
+        # Neither specified — use original dimensions to prevent gifski's default downscale
         orig_w, orig_h = get_media_dimensions(paths["input"])
-        width = width or orig_w
-        height = height or orig_h
+        width = orig_w
+        height = orig_h
+    # If only one is specified, leave the other as None so gifski scales proportionally
 
     try:
         is_gif = uploaded_file.filename.lower().endswith(".gif")
