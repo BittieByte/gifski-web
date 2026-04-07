@@ -1,125 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="{ copying: false }" x-cloak>
 <head>
-<meta charset="UTF-8">
-<title>Optimized GIF Result</title>
-<style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #e8edf3;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 40px;
-    min-height: 100vh;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 700px;
-    background: #fff;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    text-align: center;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-  }
-
-  .stats {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-    font-weight: bold;
-  }
-
-  img {
-    max-width: 100%;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  }
-
-  a.button {
-    display: inline-block;
-    margin: 5px;
-    padding: 12px 20px;
-    border-radius: 10px;
-    text-decoration: none;
-    background: #4CAF50;
-    color: white;
-    font-weight: bold;
-    transition: background 0.3s;
-  }
-
-  a.button:hover {
-    background: #45a049;
-  }
-
-  /* Loading overlay (optional if doing AJAX) */
-  .loading-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(2px);
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-  .loading-overlay.show {
-    display: flex;
-  }
-  .spinner {
-    border: 6px solid #f3f3f3;
-    border-top: 6px solid #4CAF50;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Gifski Optimization Result</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center p-4">
 
-<div class="container">
-  <h2>GIF Optimization Result</h2>
+<div class="w-full max-w-2xl bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-6">
 
-  <div class="stats">
-    <div>Original: {{ orig_size }} KB</div>
-    <div>Optimized: {{ new_size }} KB</div>
-    <div>Reduction: {{ reduction }}%</div>
+  <h2 class="text-3xl font-bold text-green-400 text-center">GIF Optimization Result</h2>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+    <div class="bg-gray-700 rounded-xl p-4">
+      <p class="text-gray-400 text-sm">Original Size</p>
+      <p class="text-xl font-bold">{{ orig_size }} KB</p>
+    </div>
+    <div class="bg-gray-700 rounded-xl p-4">
+      <p class="text-gray-400 text-sm">Optimized Size</p>
+      <p class="text-xl font-bold">{{ new_size }} KB</p>
+    </div>
+    <div class="bg-gray-700 rounded-xl p-4">
+      <p class="text-gray-400 text-sm">Reduction</p>
+      <p class="text-xl font-bold text-green-400">{{ reduction }}%</p>
+    </div>
   </div>
 
-  <img src="{{ gif_url }}" alt="Optimized GIF">
-
-  <div>
-    <a href="{{ gif_url }}" download class="button">Download GIF</a>
-    <a href="/" class="button">Upload Another</a>
+  <!-- GIF Preview -->
+  <div class="flex justify-center">
+    <img src="{{ gif_url }}" alt="Optimized GIF" class="rounded-xl max-w-full shadow-lg border border-gray-600">
   </div>
-</div>
 
-<div class="loading-overlay" id="loading-overlay">
-  <div class="spinner"></div>
-</div>
+  <!-- Action Buttons -->
+  <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+    <a href="{{ gif_url }}" download
+       class="flex-1 text-center py-3 bg-green-500 rounded-xl font-bold hover:bg-green-600 transition">
+      Download GIF
+    </a>
+    <a href="/" 
+       class="flex-1 text-center py-3 bg-gray-700 rounded-xl font-bold hover:bg-gray-600 transition">
+      Optimize Another
+    </a>
+  </div>
 
-<script>
-  // Optional: Show spinner while GIF loads
-  const img = document.querySelector('img');
-  const overlay = document.getElementById('loading-overlay');
-  overlay.classList.add('show');
-  img.onload = () => {
-    overlay.classList.remove('show');
-  };
-</script>
+  <!-- Optional: copy URL -->
+  <div class="flex justify-center mt-2">
+    <input type="text" value="{{ gif_url }}" readonly
+           class="bg-gray-700 text-gray-100 rounded-l-xl p-2 w-3/4 focus:outline-none">
+    <button @click="navigator.clipboard.writeText('{{ gif_url }}'); copying=true; setTimeout(()=>copying=false,1000)"
+            class="bg-green-500 p-2 rounded-r-xl hover:bg-green-600 transition">
+      <span x-text="copying ? 'Copied!' : 'Copy URL'"></span>
+    </button>
+  </div>
+
+</div>
 
 </body>
 </html>

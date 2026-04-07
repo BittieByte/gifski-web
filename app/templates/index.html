@@ -1,216 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="app()" x-cloak>
 <head>
-<meta charset="UTF-8">
-<title>Gifski Web Optimizer</title>
-<style>
-  /* Reset and body */
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #e8edf3;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 40px;
-    min-height: 100vh;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 700px;
-    background: #fff;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-  }
-
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  /* Drag-and-drop box */
-  .drop-zone {
-    border: 3px dashed #4CAF50;
-    border-radius: 12px;
-    padding: 40px;
-    text-align: center;
-    color: #666;
-    margin-bottom: 20px;
-    transition: background 0.3s, border-color 0.3s;
-    cursor: pointer;
-  }
-  .drop-zone.dragover {
-    background: #f0fff0;
-    border-color: #45a049;
-    color: #333;
-  }
-
-  /* Inputs */
-  input[type=file] {
-    display: none;
-  }
-
-  .form-group {
-    margin-bottom: 12px;
-  }
-  label {
-    display: block;
-    margin-bottom: 4px;
-  }
-  input[type=number], input[type=text] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  input[type=checkbox] {
-    margin-right: 6px;
-  }
-
-  /* Submit button */
-  button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: #4CAF50;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  button:hover {
-    background: #45a049;
-  }
-
-  /* Loading overlay */
-  .loading-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(2px);
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-  .loading-overlay.show {
-    display: flex;
-  }
-  .spinner {
-    border: 6px solid #f3f3f3;
-    border-top: 6px solid #4CAF50;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Gifski Web Optimizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
 
-<div class="container">
-  <h2>Upload GIF/Video to Optimize</h2>
+<div class="w-full max-w-2xl bg-gray-800 rounded-3xl shadow-2xl p-8"
+     @dragover.prevent="dragging = true"
+     @dragleave.prevent="dragging = false"
+     @drop.prevent="handleDrop($event)"
+     :class="{'ring-4 ring-green-400': dragging}">
 
-  <div class="drop-zone" id="drop-zone">
-    Drag & Drop your file here or click to select
+  <h2 class="text-3xl font-bold text-green-400 text-center mb-6">Gifski Web Optimizer</h2>
+
+  <!-- Drop Zone -->
+  <div class="border-4 border-dashed border-gray-600 rounded-xl p-12 text-center cursor-pointer hover:border-green-400 transition"
+       @click="$refs.file.click()">
+    <p class="text-gray-400" x-text="fileName || 'Drag & Drop a file here or click to select'"></p>
   </div>
 
-  <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
-    <input type="file" name="file" id="file-input" required>
+  <form action="/upload" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4" @submit="loading = true">
+    <input type="file" name="file" x-ref="file" @change="fileSelected" class="hidden" required>
 
     <!-- Basic Options -->
-    <div class="form-group">
-      <label>Quality (1-100)</label>
-      <input type="number" name="quality" value="90" min="1" max="100">
-    </div>
-    <div class="form-group">
-      <label>FPS</label>
-      <input type="number" name="fps">
-    </div>
-    <div class="form-group">
-      <label>Width (px)</label>
-      <input type="number" name="width">
-    </div>
-    <div class="form-group">
-      <label>Height (px)</label>
-      <input type="number" name="height">
+    <div class="grid grid-cols-2 gap-4">
+
+      <!-- Quality -->
+      <div>
+        <label class="flex items-center gap-2">
+          Quality
+          <span class="text-gray-400 cursor-help" title="Controls overall image quality (higher = better, larger file)">ⓘ</span>
+        </label>
+        <input type="number" name="quality" value="90" min="1" max="100"
+               class="w-full p-2 rounded-lg bg-gray-700 focus:ring-2 focus:ring-green-400">
+        <p class="text-xs text-gray-400 mt-1">Recommended: 80–95 for best balance</p>
+      </div>
+
+      <!-- FPS -->
+      <div>
+        <label class="flex items-center gap-2">
+          FPS
+          <span title="Frames per second. Lower = smaller file, choppier animation" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="fps"
+               class="w-full p-2 rounded-lg bg-gray-700 focus:ring-2 focus:ring-green-400">
+        <p class="text-xs text-gray-400 mt-1">Lower this to reduce size significantly</p>
+      </div>
+
+      <!-- Width -->
+      <div>
+        <label class="flex items-center gap-2">
+          Width
+          <span title="Resize output width in pixels" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="width"
+               class="w-full p-2 rounded-lg bg-gray-700 focus:ring-2 focus:ring-green-400">
+      </div>
+
+      <!-- Height -->
+      <div>
+        <label class="flex items-center gap-2">
+          Height
+          <span title="Resize output height in pixels" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="height"
+               class="w-full p-2 rounded-lg bg-gray-700 focus:ring-2 focus:ring-green-400">
+      </div>
     </div>
 
-    <!-- Encoding Modifiers -->
-    <div class="form-group">
-      <label><input type="checkbox" name="fast"> Fast (50% faster, lower quality)</label>
-      <label><input type="checkbox" name="extra"> Extra (slower, better quality)</label>
+    <!-- Modifiers -->
+    <div class="flex flex-col gap-2 text-sm">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="fast">
+        Fast
+        <span title="Speeds up encoding (~2x) but slightly reduces quality" class="text-gray-400 cursor-help">ⓘ</span>
+      </label>
+
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="extra">
+        Extra Quality
+        <span title="Slower encoding but improves quality" class="text-gray-400 cursor-help">ⓘ</span>
+      </label>
     </div>
 
-    <!-- Advanced Options -->
-    <div class="form-group">
-      <label>Motion Quality (1-100)</label>
-      <input type="number" name="motion_quality">
-    </div>
-    <div class="form-group">
-      <label>Lossy Quality (1-100)</label>
-      <input type="number" name="lossy_quality">
-    </div>
-    <div class="form-group">
-      <label>Repeat (-1 none, 0 forever)</label>
-      <input type="number" name="repeat">
-    </div>
-    <div class="form-group">
-      <label>Fixed Color (#RRGGBB)</label>
-      <input type="text" name="fixed_color">
-    </div>
-    <div class="form-group">
-      <label>Matte Color (#RRGGBB)</label>
-      <input type="text" name="matte">
-    </div>
-    <div class="form-group">
-      <label><input type="checkbox" name="no_sort"> No Sort (use files in exact order)</label>
+    <!-- Advanced Toggle -->
+    <button type="button" @click="showAdvanced = !showAdvanced"
+            class="w-full py-2 bg-green-500 rounded-lg font-bold hover:bg-green-600 transition">
+      Advanced Options
+    </button>
+
+    <!-- Advanced -->
+    <div x-show="showAdvanced" x-transition class="space-y-4">
+
+      <div>
+        <label class="flex items-center gap-2">
+          Motion Quality
+          <span title="How well motion is preserved between frames" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="motion_quality"
+               class="w-full p-2 rounded-lg bg-gray-700">
+      </div>
+
+      <div>
+        <label class="flex items-center gap-2">
+          Lossy Quality
+          <span title="Allows compression artifacts for smaller file size" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="lossy_quality"
+               class="w-full p-2 rounded-lg bg-gray-700">
+      </div>
+
+      <div>
+        <label class="flex items-center gap-2">
+          Repeat
+          <span title="-1 = no loop, 0 = infinite loop" class="text-gray-400 cursor-help">ⓘ</span>
+        </label>
+        <input type="number" name="repeat"
+               class="w-full p-2 rounded-lg bg-gray-700">
+      </div>
+
+      <div>
+        <label>Fixed Color</label>
+        <input type="text" name="fixed_color" placeholder="#RRGGBB"
+               class="w-full p-2 rounded-lg bg-gray-700">
+      </div>
+
+      <div>
+        <label>Matte Color</label>
+        <input type="text" name="matte" placeholder="#RRGGBB"
+               class="w-full p-2 rounded-lg bg-gray-700">
+      </div>
+
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="no_sort">
+        No Sort
+        <span title="Keeps frame order exactly as provided" class="text-gray-400 cursor-help">ⓘ</span>
+      </label>
+
     </div>
 
-    <button type="submit">Optimize</button>
+    <button type="submit"
+            class="w-full py-3 bg-green-500 rounded-xl font-bold hover:bg-green-600 transition">
+      Optimize
+    </button>
   </form>
 </div>
 
-<div class="loading-overlay" id="loading-overlay">
-  <div class="spinner"></div>
+<!-- Loader -->
+<div x-show="loading" class="fixed inset-0 bg-black/70 flex items-center justify-center">
+  <div class="w-16 h-16 border-4 border-gray-700 border-t-green-400 rounded-full animate-spin"></div>
 </div>
 
 <script>
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const form = document.getElementById('upload-form');
-const overlay = document.getElementById('loading-overlay');
-
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', e => {
-  dropZone.classList.remove('dragover');
-});
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) {
-    fileInput.files = e.dataTransfer.files;
+function app() {
+  return {
+    fileName: '',
+    dragging: false,
+    loading: false,
+    showAdvanced: false,
+    fileSelected(e) {
+      this.fileName = e.target.files[0]?.name || '';
+    },
+    handleDrop(e) {
+      this.dragging = false;
+      this.$refs.file.files = e.dataTransfer.files;
+      this.fileName = e.dataTransfer.files[0]?.name || '';
+    }
   }
-});
-
-// Show loading overlay when submitting
-form.addEventListener('submit', () => {
-  overlay.classList.add('show');
-});
+}
 </script>
 
 </body>
