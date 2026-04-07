@@ -46,6 +46,21 @@ def generate_file_paths(filename):
 def save_uploaded_file(uploaded_file, path):
     uploaded_file.save(path)
 
+def get_media_dimensions(input_path):
+    """Get width and height of a video or GIF using ffprobe."""
+    result = subprocess.run([
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0",
+        input_path
+    ], capture_output=True, text=True, check=True)
+
+    parts = result.stdout.strip().split(",")
+    if len(parts) == 2:
+        return int(parts[0]), int(parts[1])
+    raise RuntimeError("Could not determine media dimensions.")
+
 def extract_frames(input_path, temp_frames_dir):
     """Extract frames from video using ffmpeg"""
     os.makedirs(temp_frames_dir, exist_ok=True)
@@ -133,6 +148,12 @@ def upload():
     fixed_color = sanitize_color(request.form.get("fixed_color"))
     matte = sanitize_color(request.form.get("matte"))
     no_sort = sanitize_bool(request.form.get("no_sort"))
+
+    # ---------------------- Dimension fallback ----------------------
+    if not width or not height:
+        orig_w, orig_h = get_media_dimensions(paths["input"])
+        width = width or orig_w
+        height = height or orig_h
 
     try:
         is_gif = uploaded_file.filename.lower().endswith(".gif")
