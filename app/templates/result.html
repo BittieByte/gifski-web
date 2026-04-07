@@ -45,16 +45,6 @@
     </a>
   </div>
 
-  <!-- Optional: copy URL -->
-  <div class="flex justify-center mt-2">
-    <input type="text" value="{{ gif_url }}" readonly
-           class="bg-gray-700 text-gray-100 rounded-l-xl p-2 w-3/4 focus:outline-none">
-    <button @click="navigator.clipboard.writeText('{{ gif_url }}'); copying=true; setTimeout(()=>copying=false,1000)"
-            class="bg-green-500 p-2 rounded-r-xl hover:bg-green-600 transition">
-      <span x-text="copying ? 'Copied!' : 'Copy URL'"></span>
-    </button>
-  </div>
-
 </div>
 
 </body>
