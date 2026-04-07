@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Optimized GIF</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; padding: 40px; }
+.container { max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.1);}
+img { max-width: 100%; height: auto; border-radius: 6px; }
+a { display: inline-block; margin-top: 12px; text-decoration: none; color: #4CAF50; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>GIF Optimization Result</h2>
+<p>Original size: {{ orig_size }} KB</p>
+<p>Optimized size: {{ new_size }} KB</p>
+<p>Reduction: {{ reduction }}%</p>
+<img src="{{ gif_url }}" alt="Optimized GIF">
+<br>
+<a href="{{ gif_url }}" download>Download Optimized GIF</a><br>
+<a href="/">Upload Another File</a>
+</div>
+</body>
+</html>
