@@ -5,6 +5,7 @@ import subprocess
 import re
 from flask import request, render_template, send_file
 from app import app, UPLOAD_FOLDER
+from flask import abort
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -172,6 +173,13 @@ def upload():
     )
 
 
+from flask import abort
+
 @app.route("/uploads/<filename>")
 def serve_file(filename):
-    return send_file(os.path.join(UPLOAD_FOLDER, filename))
+    safe_path = os.path.join(UPLOAD_FOLDER, os.path.basename(filename))
+
+    if not os.path.exists(safe_path):
+        abort(404)
+
+    return send_file(safe_path)
