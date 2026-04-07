@@ -18,10 +18,25 @@ input[type=submit]:hover { background: #45a049; }
 <h2>Upload GIF/Video to Optimize</h2>
 <form action="/upload" method="POST" enctype="multipart/form-data">
     <input type="file" name="file" required><br>
-    Quality (0-100): <input type="number" name="quality" value="80" min="0" max="100"><br>
-    FPS (optional): <input type="number" name="fps"><br>
-    Width (optional): <input type="number" name="width"><br>
-    Height (optional): <input type="number" name="height"><br>
+
+    <!-- Basic options -->
+    Quality (1-100): <input type="number" name="quality" value="90" min="1" max="100"><br>
+    FPS: <input type="number" name="fps"><br>
+    Width: <input type="number" name="width"><br>
+    Height: <input type="number" name="height"><br>
+
+    <!-- Encoding modifiers -->
+    <label><input type="checkbox" name="fast"> Fast (50% faster, lower quality)</label><br>
+    <label><input type="checkbox" name="extra"> Extra (slower, better quality)</label><br>
+
+    <!-- Advanced options -->
+    Motion Quality (1-100): <input type="number" name="motion_quality"><br>
+    Lossy Quality (1-100): <input type="number" name="lossy_quality"><br>
+    Repeat (-1 none, 0 forever): <input type="number" name="repeat"><br>
+    Fixed Color (#RRGGBB): <input type="text" name="fixed_color"><br>
+    Matte Color (#RRGGBB): <input type="text" name="matte"><br>
+    <label><input type="checkbox" name="no_sort"> No Sort (use files in exact order)</label><br>
+
     <input type="submit" value="Optimize">
 </form>
 </div>
