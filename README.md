@@ -39,7 +39,10 @@ That's it. `gifski` and `ffmpeg` are installed inside the container — nothing 
 ### Option 1: Automated install script
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/your-username/gifski-web/main/install.sh)
+git clone https://github.com/BittieByte/gifski-web.git
+cd gifski-web
+chmod +x install.sh
+./install.sh
 ```
 
 The script will:
@@ -53,7 +56,7 @@ Once complete, open **http://localhost:5000** in your browser.
 ### Option 2: Manual Docker Compose
 
 ```bash
-git clone https://github.com/your-username/gifski-web.git
+git clone https://github.com/BittieByte/gifski-web.git
 cd gifski-web
 mkdir -p uploads
 docker compose up -d
