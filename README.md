@@ -21,6 +21,8 @@ Built with Flask, powered by `gifski` + `ffmpeg`, and designed to run behind Doc
 ## Screenshots
 
 > Upload page with basic and advanced options, and the result page showing size stats + GIF preview.
+<img width="722" height="655" alt="2026-04-07_21-19-44" src="https://github.com/user-attachments/assets/72d9ed73-078a-4064-8ad0-f2d6daa3c5a7" />
+<img width="716" height="682" alt="2026-04-07_21-31-14" src="https://github.com/user-attachments/assets/f6a46396-66b1-4c96-9c77-8a1a4722179f" />
 
 ---
 
