@@ -1,28 +1,40 @@
 # gifski-web
 
-A self-hosted web interface for [gifski](https://gif.ski/) — convert videos and GIFs into high-quality, optimized GIFs through a simple browser UI.
+> A self-hosted web UI for [gifski](https://gif.ski/) — convert videos and GIFs into high-quality, optimized GIFs through your browser. No CLI required.
 
-Built with Flask, powered by `gifski` + `ffmpeg`, and designed to run behind Docker.
-
----
-
-## Features
-
-- **Video → GIF conversion** — upload a video file and gifski-web extracts frames via `ffmpeg`, then encodes them into a high-quality GIF
-- **GIF re-optimization** — pass an existing GIF directly to gifski for re-encoding and size reduction
-- **Full gifski control** — quality, FPS, width, height, motion quality, lossy quality, loop repeat, fixed color, matte color, and frame sort options are all exposed in the UI
-- **Drag-and-drop upload** — drop a file onto the upload zone or click to browse
-- **Size reduction stats** — see original size, optimized size, and percentage reduction on the result page
-- **Preview before download** — the result page displays the finished GIF inline
-- **Input sanitization** — all form values are validated server-side before being passed to subprocesses
+![Docker](https://img.shields.io/badge/docker-compose-0074d9?style=flat-square&logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/python-3.12-1D9E75?style=flat-square&logo=python&logoColor=white)
+![gifski](https://img.shields.io/badge/gifski-latest-2ea44f?style=flat-square)
+![ffmpeg](https://img.shields.io/badge/ffmpeg-bundled-BA7517?style=flat-square&logo=ffmpeg&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-888?style=flat-square)
 
 ---
 
 ## Screenshots
 
-> Upload page with basic and advanced options, and the result page showing size stats + GIF preview.
-<img width="722" height="655" alt="2026-04-07_21-19-44" src="https://github.com/user-attachments/assets/72d9ed73-078a-4064-8ad0-f2d6daa3c5a7" />
-<img width="716" height="682" alt="2026-04-07_21-31-14" src="https://github.com/user-attachments/assets/f6a46396-66b1-4c96-9c77-8a1a4722179f" />
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/72d9ed73-078a-4064-8ad0-f2d6daa3c5a7" width="48%" alt="Upload page" />
+  &nbsp;
+  <img src="https://github.com/user-attachments/assets/f6a46396-66b1-4c96-9c77-8a1a4722179f" width="48%" alt="Result page" />
+</div>
+
+<div align="center">
+  <sub>Upload page with basic and advanced options &nbsp;·&nbsp; Result page with size stats and GIF preview</sub>
+</div>
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| **Video → GIF** | Upload any video; ffmpeg extracts frames and gifski encodes a high-quality GIF |
+| **GIF re-optimization** | Pass an existing GIF directly through gifski to reduce file size |
+| **Full gifski control** | Quality, FPS, dimensions, motion quality, lossy encoding, loop count, palette, and more |
+| **Size reduction stats** | See original size, optimized size, and % reduction on the result page |
+| **Drag-and-drop upload** | Drop a file onto the upload zone or click to browse |
+| **Inline preview** | View the finished GIF in the browser before downloading |
+| **Input sanitization** | All form values are validated server-side before being passed to subprocesses |
 
 ---
 
@@ -74,24 +86,33 @@ Then open **http://localhost:5000**.
 4. Click **Optimize**
 5. Preview the result, view size stats, and download the GIF
 
-### Options
+---
+
+## Options
+
+> If neither width nor height is specified, the original media dimensions are used — preventing gifski's default downscaling behavior.
+
+### Basic
 
 | Option | Description | Default |
 |---|---|---|
-| **Quality** | Overall GIF quality (1–100) | `90` |
-| **FPS** | Output frames per second — lower = smaller file | original |
-| **Width** | Output width in pixels | original |
-| **Height** | Output height in pixels | original |
-| **Fast** | ~2× faster encoding at a slight quality cost | off |
-| **Extra Quality** | Slower encoding for higher quality | off |
-| **Motion Quality** | How accurately motion between frames is preserved (1–100) | — |
-| **Lossy Quality** | Allow compression artifacts for smaller output (1–100) | — |
-| **Repeat** | Loop count: `0` = infinite, `-1` = no loop | — |
-| **Fixed Color** | Reserve a specific hex color in the palette (`#RRGGBB`) | — |
-| **Matte Color** | Background color for transparency compositing (`#RRGGBB`) | — |
-| **No Sort** | Keep frames in the exact order provided | off |
+| `quality` | Overall GIF quality (1–100) | `90` |
+| `fps` | Output frames per second — lower = smaller file | original |
+| `width` | Output width in pixels | original |
+| `height` | Output height in pixels | original |
+| `fast` | ~2× faster encoding at a slight quality cost | off |
+| `extra_quality` | Slower encoding for higher quality output | off |
 
-If neither width nor height is specified, the original media dimensions are used automatically — preventing gifski's default downscaling behavior.
+### Advanced
+
+| Option | Description | Default |
+|---|---|---|
+| `motion_quality` | How accurately motion between frames is preserved (1–100) | — |
+| `lossy_quality` | Allow compression artifacts for smaller output (1–100) | — |
+| `repeat` | Loop count: `0` = infinite, `-1` = no loop | — |
+| `fixed_color` | Reserve a specific hex color in the palette (`#RRGGBB`) | — |
+| `matte` | Background color for transparency compositing (`#RRGGBB`) | — |
+| `no_sort` | Keep frames in the exact order provided | off |
 
 ---
 
@@ -99,10 +120,16 @@ If neither width nor height is specified, the original media dimensions are used
 
 The image uses a two-stage build:
 
-- **Stage 1 (builder):** Compiles `gifski` from source using the Rust toolchain on `debian:bookworm-slim`, with `RUSTFLAGS="-C target-cpu=native"` for optimized output
-- **Stage 2 (runtime):** `python:3.12-slim` with `ffmpeg` installed; copies the compiled `gifski` binary from the builder stage
+**Stage 1 — builder** (`debian:bookworm-slim`)
+- Installs the Rust toolchain
+- Compiles `gifski` from source with `RUSTFLAGS="-C target-cpu=native"` for optimized output
 
-Uploaded files are stored in the `./uploads` directory, which is bind-mounted from the host so files persist across container restarts.
+**Stage 2 — runtime** (`python:3.12-slim`)
+- Copies the compiled `gifski` binary from stage 1
+- Installs `ffmpeg` and `ffprobe`
+- Runs the Flask app on port `5000`
+
+Uploaded files are stored in `./uploads`, bind-mounted from the host so files persist across container restarts.
 
 ```yaml
 # docker-compose.yml (summary)
@@ -130,10 +157,16 @@ docker compose build --no-cache && docker compose up -d
 
 ## Tech Stack
 
-- **Backend:** Python / Flask
-- **GIF encoding:** [gifski](https://gif.ski/) (compiled from source)
-- **Frame extraction:** [ffmpeg](https://ffmpeg.org/) / ffprobe
-- **Frontend:** [Tailwind CSS](https://tailwindcss.com/) + [Alpine.js](https://alpinejs.dev/)
-- **Container:** Docker (multi-stage build)
+| Layer | Technology |
+|---|---|
+| Backend | [Python](https://python.org) / [Flask](https://flask.palletsprojects.com/) |
+| GIF encoding | [gifski](https://gif.ski/) (compiled from source) |
+| Frame extraction | [ffmpeg](https://ffmpeg.org/) / ffprobe |
+| Frontend | [Tailwind CSS](https://tailwindcss.com/) + [Alpine.js](https://alpinejs.dev/) |
+| Container | Docker (multi-stage build) |
 
 ---
+
+<div align="center">
+  <sub>Built with gifski + ffmpeg · Powered by Flask · Containerized with Docker</sub>
+</div>
